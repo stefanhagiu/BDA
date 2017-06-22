@@ -6,6 +6,7 @@
     Infer publication contribution based on confidence-level for the results described in the paper. This is useful information when correlating scientific impact (e.g. via bibliometric metrics such as times cited) and author self-confidence.
 
  <h2> What is inside: </h2>
+ <h3> Some files are archived to conserve space - unzip them before running the project!</h3>
  <ul>
     <li>
         <p>To run the project first we have to build the jar. For that run <i>maven package</i>, this will create 2 jar files in target file.</p>
