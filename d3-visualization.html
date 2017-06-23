@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+	<title>Bar chart</title>
+    <style>
+
+        .bar--positive {
+            fill: steelblue;
+        }
+
+        .bar--negative {
+            fill: darkorange;
+        }
+
+        .axis text {
+            font: 10px sans-serif;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .d3-tip {
+            line-height: 1;
+            font-weight: bold;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 2px;
+        }
+        /* Creates a small triangle extender for the tooltip */
+        .d3-tip:after {
+            box-sizing: border-box;
+            display: inline;
+            font-size: 10px;
+            width: 100%;
+            line-height: 1;
+            color: rgba(0, 0, 0, 0.8);
+            content: "\25BC";
+            position: absolute;
+            text-align: center;
+        }
+
+        /* Style northward tooltips differently */
+        .d3-tip.n:after {
+            margin: -1px 0 0 0;
+            top: 100%;
+            left: 0;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+</head>
+<body>
+
+<script>
+    "use strict";
+
+    var margin = {top: 20, right: 30, bottom: 40, left: 900},
+        width = 2000 - margin.left - margin.right,
+        height = 300000 - margin.top - margin.bottom;
+
+    var x = d3.scale.linear()
+        .range([0, width]);
+
+    var y = d3.scale.ordinal()
+        .rangeRoundBands([0, height], 0.1);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .tickSize(0)
+        .tickPadding(6);
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-10, 0])
+        .html(function(d) {
+            let color = "white";
+            if (d.rate > 50) {
+                color = "green";
+            }
+            if (d.rate < -50) {
+                color = "red";
+            }
+            return "<strong style='color:"+color+"'>Rate:</strong> <span style='color:"+color+"'>" + d.rate + "</span>";
+        });
+
+    svg.call(tip);
+
+    d3.json("./src/main/resources/pmc_oa_processed_mapreduce/third_final.json", function(error, data) {
+        if (error) throw error;
+
+        let _flatten  = function (multiArray) {
+            let array = [];
+            for (let _array of multiArray) {
+                array = array.concat(_array);
+            }
+            return array;
+        };
+
+        data = _flatten(data).filter(function (data) {
+          return data.length >8;
+        });
+        if (data.length > 10000) {
+            data =  data.slice(0,10000);
+            console.log(data);
+        }
+
+        x.domain(d3.extent(data, function(d) { return parseFloat(d.rate); })).nice();
+        y.domain(data.map(function(d) { return  d.title + " " + d.year }));
+
+        svg.selectAll(".bar")
+            .data(data)
+            .enter().append("rect")
+            .attr("class", function(d) { return "bar bar--" + (d.rate < 0 ? "negative" : "positive"); })
+            .attr("x", function(d) { return x(Math.min(0, d.rate)); })
+            .attr("y", function(d) { return y(d.title + " " + d.year); })
+            .attr("width", function(d) { return Math.abs(x(d.rate) - x(0)); })
+            .attr("height", y.rangeBand())
+            .attr("rate", function (d) {
+                return d.rate;
+            })
+            .on('mouseover', tip.show)
+            .on('mouseout', tip.hide);
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .attr("transform", "translate(" + x(0) + ",0)")
+            .call(yAxis);
+
+    });
+</script>
+</body>
+</html>
